@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LiveKit Test Client</title>
+    <script>
+        // Debug script loading
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    console.log('Script loaded:', src);
+                    console.log('LiveKitClient available:', typeof LiveKitClient);
+                    resolve();
+                };
+                script.onerror = () => {
+                    console.error('Failed to load script:', src);
+                    reject(new Error(`Failed to load ${src}`));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // Load LiveKit client
+        loadScript('https://unpkg.com/livekit-client@2.5.7/dist/livekit-client.umd.js')
+            .then(() => {
+                document.getElementById('status').innerHTML = 'LiveKit loaded successfully!';
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = `Failed to load LiveKit: ${error.message}`;
+            });
+    </script>
+</head>
+<body>
+    <h1>LiveKit Test</h1>
+    <div id="status">Loading LiveKit...</div>
+    <button onclick="connect()">Join Room</button>
+
+    <script>
+        async function connect() {
+            if (typeof LiveKitClient === 'undefined') {
+                document.getElementById('status').innerHTML = 'LiveKit not loaded yet!';
+                return;
+            }
+
+            const room = new LiveKitClient.Room();
+            
+            room.on('participantMetadataChanged', (metadata, participant) => {
+                console.log('Metadata updated:', metadata, participant.identity);
+                document.getElementById('status').innerHTML = 
+                    `Metadata: ${metadata}`;
+            });
+
+            room.on('dataReceived', (payload, participant) => {
+                const message = new TextDecoder().decode(payload);
+                console.log('Data received:', message);
+            });
+
+            try {
+                const token = "PASTE_TOKEN_HERE";
+                await room.connect('wss://lk-latest.dragonteam.dev/', token);
+                document.getElementById('status').innerHTML = 
+                    `Connected as: ${room.localParticipant.identity}`;
+            } catch (error) {
+                console.error('Connection error:', error);
+                document.getElementById('status').innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
